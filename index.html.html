@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador Semântico Pro (v35 - Layout Ajustado)</title>
+    <style>
+        /* --- RESET GLOBAL --- */
+        * { box-sizing: border-box; }
+
+        /* --- PALETA --- */
+        :root {
+            --cor-laranja: #FF9F43;
+            --cor-creme: #FFF8E7;
+            --cor-azul-fundo: #DDF3FC;
+            --cor-marrom: #6D4C41;
+            --cor-vermelho: #E57368;
+            --cor-azul-escuro: #457B9D;
+            --cor-texto: #333;
+            --largura-maxima: 900px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: var(--cor-azul-fundo); 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            color: var(--cor-texto);
+            margin: 0;
+        }
+        
+        /* --- HERO HEADER --- */
+        .hero-header {
+            width: 100%;
+            max-width: var(--largura-maxima);
+            margin-bottom: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            background: #fff;
+        }
+
+        .hero-header img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* --- CONTAINER --- */
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 6px 20px rgba(93, 64, 55, 0.1);
+            width: 100%; 
+            max-width: var(--largura-maxima); 
+            position: relative; 
+            border-top: 5px solid var(--cor-laranja);
+        }
+
+        /* Botão Reset Total */
+        .btn-hard-reset {
+            position: absolute; top: 30px; right: 30px;
+            background-color: var(--cor-vermelho); color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;
+            transition: 0.2s; text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-hard-reset:hover { background-color: #d65a4e; transform: translateY(-1px); }
+
+        h2 { text-align: center; color: var(--cor-azul-escuro); margin-bottom: 15px; margin-top: 10px; font-weight: 800; }
+        
+        /* BANNER INFO (Reposicionado e Ajustado) */
+        .info-banner {
+            /*background-color: var(--cor-creme);*/
+            color: var(--cor-marrom);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid #e0d0b0;
+            margin-bottom: 30px; /* Mais espaço abaixo dele */
+            line-height: 1.4;
+            text-align: left; /* Centralizado agora */
+        }
+
+        .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; margin-bottom: 8px; }
+        .section-title { font-size: 14px; font-weight: bold; color: var(--cor-marrom); text-transform: uppercase; letter-spacing: 0.5px; }
+        .helper-text { font-size: 12px; color: #888; display: block; margin-bottom: 5px; }
+        
+        .btn-reset { background: none; border: none; color: var(--cor-vermelho); font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; font-weight: bold; }
+        .btn-reset:hover { color: #c0392b; }
+
+        textarea, input { 
+            width: 100%; padding: 12px; 
+            border: 2px solid #eee; 
+            border-radius: 8px; 
+            font-size: 15px; 
+            background: var(--cor-creme); 
+            color: #4a4a4a;
+        }
+        textarea:focus, input:focus { border-color: var(--cor-laranja); outline: none; background: #fff; }
+        
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
+        @media (max-width: 600px) { 
+            .controls-grid { grid-template-columns: 1fr; } 
+            .btn-hard-reset { position: static; display: block; width: 100%; margin-bottom: 15px; text-align: center; }
+        }
+
+        .btn-analisar { 
+            width: 100%; padding: 15px; 
+            background: var(--cor-laranja); 
+            color: white; border: none; 
+            font-size: 16px; font-weight: bold; 
+            cursor: pointer; margin-top: 25px; 
+            border-radius: 8px; transition: 0.2s; 
+            box-shadow: 0 4px 0 #e67e22;
+        }
+        .btn-analisar:hover { background: #ffaa5b; box-shadow: 0 2px 0 #e67e22; transform: translateY(2px); }
+        
+        .btn-exportar { background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; max-width: 150px; white-space: nowrap; }
+        .btn-exportar:hover { background: #2ecc71; }
+
+        .btn-quick-ignore { background: #fff0f0; border: 1px solid #ffcccc; color: #c0392b; font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer; margin-left: 10px; transition: 0.2s; white-space: nowrap; }
+        .btn-quick-ignore:hover { background: #c0392b; color: white; border-color: #c0392b; }
+
+        /* Botões dos Cards */
+        .card-actions { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-group-action { flex: 2; background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; font-size: 11px; padding: 4px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-group-action:hover { background: #2e7d32; color: white; }
+        .btn-ignore-action { flex: 2; background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; font-size: 11px; padding: 4px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-ignore-action:hover { background: #c62828; color: white; }
+        .btn-dismiss-action { flex: 1; background: #fafafa; border: 1px solid #ddd; color: #777; font-size: 11px; padding: 4px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-dismiss-action:hover { background: #9e9e9e; color: white; border-color: #9e9e9e; }
+        .btn-mass-ignore { background-color: var(--cor-azul-escuro); color: white; border: none; font-size: 12px; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .btn-mass-ignore:hover { opacity: 0.9; }
+
+        /* ABAS */
+        .tabs-wrapper { margin-top: 30px; display: none; }
+        .tabs-nav { display: flex; border-bottom: 3px solid #eee; gap: 5px; }
+        .tab-btn { 
+            padding: 12px 20px; border: none; background: #f8f9fa; cursor: pointer; 
+            font-size: 14px; font-weight: bold; color: #999; 
+            border-radius: 8px 8px 0 0; transition: 0.3s; position: relative; 
+        }
+        .tab-btn:hover { background: #eee; color: #555; }
+        .tab-btn.active { 
+            background: white; color: var(--cor-azul-escuro); 
+            border: 3px solid #eee; border-bottom: 3px solid white; 
+            margin-bottom: -3px; z-index: 2; 
+        }
+        .tab-badge { background: var(--cor-laranja); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px; vertical-align: middle; }
+        .tab-badge.empty { display: none; }
+        .tab-content { padding: 25px 5px; display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Áreas de Insights */
+        .insight-container { display: flex; flex-direction: column; gap: 15px; }
+        .insight-box { padding: 15px; border-radius: 8px; display: none; }
+        .insight-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .insight-card { background: white; padding: 10px; border-radius: 6px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; }
+        
+        #pluralArea { background-color: #e3f2fd; border: 1px solid #bbdefb; }
+        .plural-title { color: #1976d2; font-weight: bold; font-size: 15px; margin-bottom: 10px; }
+        .plural-card { border-left: 3px solid #1976d2; }
+        #genderArea { background-color: #f3e5f5; border: 1px solid #e1bee7; }
+        .gender-title { color: #8e24aa; font-weight: bold; font-size: 15px; margin-bottom: 10px; }
+        .gender-card { border-left: 3px solid #8e24aa; }
+        #typoArea { background-color: #fff8e1; border: 1px solid #ffecb3; }
+        .typo-title { color: #f39c12; font-weight: bold; font-size: 15px; margin-bottom: 10px; }
+        .typo-card { border-left: 3px solid #f39c12; }
+        #stopwordArea { background-color: #eceff1; border: 1px solid #cfd8dc; }
+        .stopword-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .stopword-title { color: #546e7a; font-weight: bold; font-size: 15px; margin: 0; }
+        .stopword-card { border-left: 3px solid #546e7a; }
+
+        .arrow-sep { color: #999; margin: 0 5px; }
+        .suggestion-text { margin-bottom: 5px; text-align: center; }
+        .suggestion-match { font-weight: bold; color: #333; }
+        .suggestion-fix { font-weight: bold; color: #27ae60; }
+        .suggestion-accent { font-weight: bold; color: #e67e22; }
+        .suggestion-stop { font-weight: bold; color: #c62828; }
+
+        /* Tabela */
+        table { width: 100%; border-collapse: collapse; margin-top: 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; vertical-align: top; }
+        th { background: #f8f9fa; color: var(--cor-azul-escuro); font-weight: 700; }
+        tr:hover { background-color: #f1f7fc; }
+        
+        .word-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .badge-synonym { display: inline-block; font-size: 12px; color: #7f8c8d; font-style: italic; margin-right: 5px; }
+        .context-box { background-color: #fdfdfd; border-left: 3px solid #3498db; padding: 8px; margin-top: 8px; font-size: 13px; color: #555; max-height: 120px; overflow-y: auto; border-radius: 0 4px 4px 0; box-shadow: inset 0 0 5px rgba(0,0,0,0.02); }
+        .context-item { margin-bottom: 6px; line-height: 1.4; border-bottom: 1px dashed #eee; padding-bottom: 4px; }
+        .context-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .highlight { background-color: #fff3cd; font-weight: bold; padding: 0 2px; border-radius: 2px; color: #333; }
+        .badge-count { background: var(--cor-vermelho); color: white; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 14px; }
+        .error-box { background: #ffeaa7; color: #d35400; padding: 10px; border-radius: 4px; margin-top: 15px; text-align: center; display: none; font-weight: bold; }
+        
+        /* Controles de Reset */
+        .reset-controls { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #ddd; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn-control-reset { background-color: #f5f6fa; border: 1px solid #dcdde1; color: #555; padding: 8px 12px; font-size: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-control-reset:hover { background-color: #e2e6ea; color: #333; border-color: #999; }
+        .no-suggestions-msg { text-align: center; color: #7f8c8d; font-style: italic; padding: 20px; background: #fafafa; border-radius: 8px; }
+
+        .app-footer { text-align: center; margin-top: 40px; padding-top: 15px; border-top: 1px solid #eee; color: #bdc3c7; font-size: 11px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="hero-header">
+        <img src="imagens/header-gatinho.png.png" alt="Gatinho Detetive Analisador Semântico" onerror="this.style.display='none'; document.querySelector('.hero-header').style.height='20px'; document.querySelector('.hero-header').style.background='transparent'; document.querySelector('.hero-header').style.boxShadow='none';">
+    </div>
+
+    <div class="container">
+        <button class="btn-hard-reset" onclick="comecarDoZero()" title="APAGA TUDO: Retorna ao estado original de fábrica.">Começar do Zero</button>
+
+        <h2>Analisador de Texto</h2>
+
+        <div class="info-banner">
+            ℹ️ <b>Dica:</b> Seus dados (texto, sinônimos e filtros) são <b>salvos automaticamente</b> no seu navegador. Você pode fechar esta página e voltar depois sem perder nada! Mas ó, não vai deletar o cache não, pelamor! 
+            E ouvi dizer que um backup sempre faz bem para a pele, viu? ;D
+        </div>
+
+        <div>
+            <div class="section-header">
+                <span class="section-title">1. Texto para Análise</span>
+                <button class="btn-reset" onclick="limparCampo('texto')" title="Limpa apenas o texto da caixa abaixo.">Limpar Campo</button>
+            </div>
+            <textarea id="textoInput" style="height: 150px;" placeholder="Ex: siric.caixa e negocios.caixa são importantes."></textarea>
+        </div>
+
+        <div class="controls-grid">
+            <div>
+                <div class="section-header">
+                    <span class="section-title">2. Ignorar (Stop Words)</span>
+                    <button class="btn-reset" onclick="limparCampo('ignorar')" title="Apaga todas as palavras ignoradas.">Limpar Campo</button>
+                </div>
+                <div class="helper-text">Palavras comuns que não devem ser contadas.</div>
+                <textarea id="ignorarInput" style="height: 100px;" placeholder="Exemplo:&#10;a, e, de, se, em"></textarea>
+            </div>
+            <div>
+                <div class="section-header">
+                    <span class="section-title">3. Agrupar Sinônimos</span>
+                    <button class="btn-reset" onclick="limparCampo('sinonimos')" title="Apaga todos os sinônimos.">Limpar Campo</button>
+                </div>
+                <div class="helper-text">Formato: <b>Principal = sin1, sin2</b></div>
+                <textarea id="sinonimosInput" style="height: 100px;" placeholder="Exemplo:&#10;carro = automóvel, veículo"></textarea>
+            </div>
+        </div>
+
+        <button type="button" class="btn-analisar" onclick="executarAnalise(false)" title="Executa a análise e gera sugestões.">Processar Texto</button>
+        <div id="msgErro" class="error-box"></div>
+
+        <div class="tabs-wrapper" id="tabsWrapper">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="abrirAba('suggestionsTab', this)" id="btnTabSugestoes">
+                    💡 Sugestões & Insights <span id="badgeCount" class="tab-badge empty">0</span>
+                </button>
+                <button class="tab-btn" onclick="abrirAba('tableTab', this)" id="btnTabTabela">
+                    📊 Tabela de Resultados
+                </button>
+            </div>
+
+            <div id="suggestionsTab" class="tab-content active">
+                
+                <div class="reset-controls">
+                    <button class="btn-control-reset" onclick="desfazerAgrupamentos()" title="Desfaz apenas os agrupamentos aceitos nesta sessão.">↩️ Desfazer Agrupamentos</button>
+                    <button class="btn-control-reset" onclick="reexibirOcultos()" title="Traz de volta as sugestões que você clicou em 'Não'.">👁️ Reexibir Sugestões Ocultas</button>
+                    <button class="btn-control-reset" onclick="reconsiderarIgnorados()" title="Remove palavras que foram ignoradas pelos botões de sugestão.">♻️ Reconsiderar Ignorados</button>
+                </div>
+
+                <div class="insight-container" id="allInsightsContainer">
+                    <div id="stopwordArea" class="insight-box">
+                        <div class="stopword-header">
+                            <div class="stopword-title">🛑 Sugestões de Stop Words (Gramática):</div>
+                            <button class="btn-mass-ignore" onclick="ignorarTodasStopWords()" title="Adiciona TODAS as sugestões abaixo à lista de Ignorados.">➕ Ignorar Todos</button>
+                        </div>
+                        <div id="stopwordGrid" class="insight-grid"></div>
+                    </div>
+
+                    <div id="pluralArea" class="insight-box">
+                        <div class="plural-title">🔵 Plurais / Variações encontradas:</div>
+                        <div id="pluralGrid" class="insight-grid"></div>
+                    </div>
+                    <div id="genderArea" class="insight-box">
+                        <div class="gender-title">🟣 Variações de Gênero encontradas:</div>
+                        <div id="genderGrid" class="insight-grid"></div>
+                    </div>
+                    <div id="typoArea" class="insight-box">
+                        <div class="typo-title">⚠️ Possíveis erros de digitação / Acentos:</div>
+                        <div id="typoGrid" class="insight-grid"></div>
+                    </div>
+                    
+                    <div id="noSuggestionsMsg" class="no-suggestions-msg" style="display:none;">
+                        🎉 Nenhuma sugestão encontrada! Seu texto parece bem organizado.
+                    </div>
+                </div>
+            </div>
+
+            <div id="tableTab" class="tab-content">
+                <div id="resultadoWrapper" style="display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="font-size: 16px; color: #555;">
+                            Total único: <strong id="totalCount" style="color: #333; font-size: 18px;">0</strong>
+                        </div>
+                        <button onclick="baixarPlanilha()" class="btn-exportar" title="Baixar relatório em Excel/CSV.">📥 Baixar Planilha</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 75%;">Palavra e Contexto</th>
+                                <th style="width: 25%;">Ocorrências</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaResultado"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-footer">Versão 1.0.0. - Analisador Semântico Pro (Ajuste Banner)</div>
+    </div>
+
+    <script>
+        const GRAMATICA_IGNORAR = new Set(["o","a","os","as","um","uns","uma","umas","de","do","da","dos","das","em","no","na","nos","nas","por","pelo","pela","pelos","pelas","para","pra","com","sem","sob","sobre","ante","até","após","e","ou","mas","nem","que","se","como","pois","logo","eu","tu","ele","ela","nós","vós","eles","elas","meu","teu","seu","sua","nosso","foi","é","são","ser","estar","ter","tem","um","dois","três","quatro","cinco","seis","sete","oito","nove","dez","não"]);
+        const PADRAO_IGNORAR = ""; 
+        const PADRAO_SINONIMOS = "";
+        let dadosParaExportacao = [];
+        let sugestoesIgnoradasSet = new Set();
+        let sessionHidden = new Set(); 
+        let manualIgnorar = "";
+        let manualSinonimos = "";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const salvoIgnorar = localStorage.getItem("meus_ignorados");
+            const salvoSinonimos = localStorage.getItem("meus_sinonimos");
+            const salvoTexto = localStorage.getItem("meu_texto");
+            const salvoSugestoesIgnoradas = localStorage.getItem("sugestoes_ignoradas");
+
+            document.getElementById('ignorarInput').value = salvoIgnorar !== null ? salvoIgnorar : "";
+            document.getElementById('sinonimosInput').value = salvoSinonimos !== null ? salvoSinonimos : "";
+            if (salvoTexto !== null) document.getElementById('textoInput').value = salvoTexto;
+            if (salvoSugestoesIgnoradas) sugestoesIgnoradasSet = new Set(JSON.parse(salvoSugestoesIgnoradas));
+            
+            manualIgnorar = document.getElementById('ignorarInput').value;
+            manualSinonimos = document.getElementById('sinonimosInput').value;
+
+            document.getElementById('ignorarInput').addEventListener('input', function() { localStorage.setItem("meus_ignorados", this.value); manualIgnorar = this.value; });
+            document.getElementById('sinonimosInput').addEventListener('input', function() { localStorage.setItem("meus_sinonimos", this.value); manualSinonimos = this.value; });
+            document.getElementById('textoInput').addEventListener('input', function() { localStorage.setItem("meu_texto", this.value); });
+        });
+
+        function abrirAba(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function comecarDoZero() {
+            if(!confirm("ATENÇÃO: Reset Total. Apagará tudo. Continuar?")) return;
+            localStorage.clear();
+            location.reload();
+        }
+
+        function limparCampo(tipo) {
+            if(!confirm("Limpar este campo?")) return;
+            if (tipo === 'texto') {
+                document.getElementById('textoInput').value = ""; localStorage.setItem("meu_texto", "");
+                document.getElementById('tabsWrapper').style.display = 'none';
+            } else if (tipo === 'ignorar') { 
+                document.getElementById('ignorarInput').value = ""; localStorage.setItem("meus_ignorados", ""); manualIgnorar = "";
+            } else { 
+                document.getElementById('sinonimosInput').value = ""; localStorage.setItem("meus_sinonimos", ""); manualSinonimos = "";
+            }
+        }
+
+        function desfazerAgrupamentos() {
+            if(confirm("Reverter lista de sinônimos para o estado manual anterior?")) {
+                document.getElementById('sinonimosInput').value = manualSinonimos;
+                localStorage.setItem("meus_sinonimos", manualSinonimos);
+                executarAnalise(true);
+            }
+        }
+
+        function reconsiderarIgnorados() {
+            if(confirm("Reverter lista de ignorados para o estado manual anterior?")) {
+                document.getElementById('ignorarInput').value = manualIgnorar;
+                localStorage.setItem("meus_ignorados", manualIgnorar);
+                executarAnalise(true);
+            }
+        }
+
+        function reexibirOcultos() {
+            if(sessionHidden.size === 0) { alert("Nenhuma sugestão oculta nesta sessão."); return; }
+            if(confirm("Reexibir as sugestões ocultas?")) {
+                sessionHidden.forEach(key => sugestoesIgnoradasSet.delete(key));
+                sessionHidden.clear();
+                localStorage.setItem("sugestoes_ignoradas", JSON.stringify([...sugestoesIgnoradasSet]));
+                executarAnalise(true);
+            }
+        }
+
+        function adicionarIgnorado(palavra) {
+            const el = document.getElementById('ignorarInput');
+            let vals = el.value.split(',').map(s=>s.trim()).filter(s=>s);
+            if(!vals.includes(palavra)){
+                vals.push(palavra);
+                el.value = vals.join(', ');
+                localStorage.setItem("meus_ignorados", el.value);
+                executarAnalise(true);
+            }
+        }
+
+        function ignorarTodasStopWords() {
+            if(!confirm("Ignorar todas as stop words sugeridas?")) return;
+            const elTexto = document.getElementById('textoInput');
+            const elIgnorar = document.getElementById('ignorarInput');
+            const textoRaw = elTexto.value;
+            const caracteresValidos = "a-z0-9áàâãéèêíïóôõöúçñ\\.\\-_";
+            let textoLimpo = textoRaw.toLowerCase().replace(new RegExp(`[^${caracteresValidos}]+`, 'g'), " ");
+            let palavras = textoLimpo.split(/\s+/).filter(w => w.trim() !== "");
+            let contagem = {};
+            palavras.forEach(p => { 
+                p = p.replace(/^\.+|\.+$/g, "");
+                if(p) contagem[p] = (contagem[p]||0)+1; 
+            });
+            const palavrasUnicas = Object.keys(contagem);
+            let currentIgnoreVals = elIgnorar.value.split(',').map(s=>s.trim()).filter(s=>s);
+            let setIgnorar = new Set(currentIgnoreVals);
+            let novosIgnorados = [];
+            palavrasUnicas.forEach(word => {
+                const stopKey = word + "|STOPWORD";
+                if (GRAMATICA_IGNORAR.has(word) && !setIgnorar.has(word) && !sugestoesIgnoradasSet.has(stopKey)) {
+                    novosIgnorados.push(word);
+                }
+            });
+            if(novosIgnorados.length === 0) { alert("Nenhuma nova sugestão encontrada."); return; }
+            let finalArray = currentIgnoreVals.concat(novosIgnorados);
+            elIgnorar.value = finalArray.join(', ');
+            localStorage.setItem("meus_ignorados", elIgnorar.value);
+            executarAnalise(true);
+        }
+
+        function agruparSinonimo(principal, variacao) {
+            const el = document.getElementById('sinonimosInput');
+            let linhas = el.value.split('\n');
+            let encontrouLinha = false;
+            let novaLista = [];
+            for (let linha of linhas) {
+                if (linha.trim() === '') continue;
+                if (linha.includes('=')) {
+                    let [chave, valores] = linha.split('=');
+                    chave = chave.trim().toLowerCase();
+                    if (chave === principal.toLowerCase()) {
+                        let listaValores = valores.split(',').map(s => s.trim().toLowerCase());
+                        if (!listaValores.includes(variacao.toLowerCase())) { linha += `, ${variacao}`; }
+                        encontrouLinha = true;
+                    }
+                }
+                novaLista.push(linha);
+            }
+            if (!encontrouLinha) { novaLista.push(`${principal} = ${variacao}`); }
+            el.value = novaLista.join('\n');
+            localStorage.setItem("meus_sinonimos", el.value);
+            executarAnalise(true);
+        }
+
+        function dispensarSugestao(a, b) {
+            const key = [a, b].sort().join('|');
+            sugestoesIgnoradasSet.add(key);
+            sessionHidden.add(key); 
+            localStorage.setItem("sugestoes_ignoradas", JSON.stringify([...sugestoesIgnoradasSet]));
+            executarAnalise(true);
+        }
+
+        function levenshtein(a, b) {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) == a.charAt(j - 1)) { matrix[i][j] = matrix[i - 1][j - 1]; }
+                    else { matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)); }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+        function executarAnalise(manterAba = false) {
+            try {
+                const elTexto = document.getElementById('textoInput');
+                const elIgnorar = document.getElementById('ignorarInput');
+                const elSinonimos = document.getElementById('sinonimosInput');
+                const tabela = document.getElementById('tabelaResultado');
+                const msgErro = document.getElementById('msgErro');
+
+                const pluralArea = document.getElementById('pluralArea'); const pluralGrid = document.getElementById('pluralGrid');
+                const genderArea = document.getElementById('genderArea'); const genderGrid = document.getElementById('genderGrid');
+                const typoArea = document.getElementById('typoArea'); const typoGrid = document.getElementById('typoGrid');
+                const stopwordArea = document.getElementById('stopwordArea'); const stopwordGrid = document.getElementById('stopwordGrid');
+                const tabsWrapper = document.getElementById('tabsWrapper');
+                const noSuggestionsMsg = document.getElementById('noSuggestionsMsg');
+                const badgeCount = document.getElementById('badgeCount');
+
+                const textoRaw = elTexto.value;
+                tabela.innerHTML = ''; msgErro.style.display = 'none';
+                pluralArea.style.display = 'none'; pluralGrid.innerHTML = '';
+                genderArea.style.display = 'none'; genderGrid.innerHTML = '';
+                typoArea.style.display = 'none'; typoGrid.innerHTML = '';
+                stopwordArea.style.display = 'none'; stopwordGrid.innerHTML = '';
+                dadosParaExportacao = []; 
+
+                if (!textoRaw.trim()) { 
+                    msgErro.textContent = "Insira um texto."; 
+                    msgErro.style.display = 'block'; 
+                    tabsWrapper.style.display = 'none';
+                    return; 
+                }
+
+                tabsWrapper.style.display = 'block';
+
+                const setIgnorar = new Set(elIgnorar.value.toLowerCase().split(/[\n,]+/).map(s => s.trim()).filter(s => s));
+                const mapaSinonimos = {}; 
+                if (elSinonimos.value) {
+                    elSinonimos.value.split('\n').forEach(linha => {
+                        if(linha.includes('=')) {
+                            const [principal, restos] = linha.split('=');
+                            if(restos) { restos.split(',').forEach(sin => { 
+                                const s = sin.trim().toLowerCase(); if(s) mapaSinonimos[s] = principal.trim().toLowerCase(); 
+                            }); }
+                        }
+                    });
+                }
+
+                // Split por pontuação e quebra de linha
+                const blocosDeContexto = textoRaw.split(/(?:[!?]|\.\s|\n)+/).filter(b => b.trim().length > 0);
+
+                // Caracteres validos (incluindo . - _)
+                const caracteresValidos = "a-z0-9áàâãéèêíïóôõöúçñ\\.\\-_";
+                let textoLimpo = textoRaw.toLowerCase().replace(new RegExp(`[^${caracteresValidos}]+`, 'g'), " ");
+                let palavrasBrutas = textoLimpo.split(/\s+/).filter(w => w.trim() !== "");
+                let contagem = {};
+                let rastreioVariacoes = {}; 
+
+                if (palavrasBrutas.length === 0) { msgErro.textContent = "Nenhuma palavra encontrada."; msgErro.style.display = 'block'; return; }
+
+                palavrasBrutas.forEach(p => {
+                    p = p.replace(/^\.+|\.+$/g, "");
+                    if (!p || setIgnorar.has(p)) return;
+                    let chave = mapaSinonimos[p] || p;
+                    contagem[chave] = (contagem[chave] || 0) + 1;
+                    if (!rastreioVariacoes[chave]) rastreioVariacoes[chave] = new Set();
+                    rastreioVariacoes[chave].add(p);
+                });
+
+                // --- DETECÇÃO ---
+                const palavrasUnicas = Object.keys(contagem);
+                let sugestoesTypos = [];
+                let sugestoesPlurais = [];
+                let sugestoesGeneros = [];
+                let sugestoesStopWords = [];
+
+                palavrasUnicas.forEach(word => {
+                    const stopKey = word + "|STOPWORD";
+                    if (GRAMATICA_IGNORAR.has(word) && !setIgnorar.has(word) && !sugestoesIgnoradasSet.has(stopKey)) {
+                        sugestoesStopWords.push(word);
+                    }
+                });
+
+                for (let i = 0; i < palavrasUnicas.length; i++) {
+                    for (let j = i + 1; j < palavrasUnicas.length; j++) {
+                        let w1 = palavrasUnicas[i];
+                        let w2 = palavrasUnicas[j];
+
+                        const pairKey = [w1, w2].sort().join('|');
+                        if (sugestoesIgnoradasSet.has(pairKey)) continue;
+
+                        if (w1.length < 4 || w2.length < 4) continue;
+                        let dist = levenshtein(w1, w2);
+                        let limiteErro = (w1.length > 5 || w2.length > 5) ? 2 : 1;
+                        let norm1 = removerAcentos(w1);
+                        let norm2 = removerAcentos(w2);
+                        let saoIguaisSemAcento = (norm1 === norm2);
+
+                        if (dist <= limiteErro || saoIguaisSemAcento) {
+                            let maior = w1.length > w2.length ? w1 : w2;
+                            let menor = w1.length > w2.length ? w2 : w1;
+
+                            if (dist === 1 && maior.startsWith(menor)) {
+                                sugestoesPlurais.push({ base: menor, var: maior });
+                                continue; 
+                            }
+                            if (w1.length === w2.length) {
+                                const fim1 = w1.slice(-1); const fim2 = w2.slice(-1);
+                                const tronco1 = w1.slice(0, -1); const tronco2 = w2.slice(0, -1);
+                                if (tronco1 === tronco2 && ((fim1 === 'a' && fim2 === 'o') || (fim1 === 'o' && fim2 === 'a'))) {
+                                    let base = contagem[w1] >= contagem[w2] ? w1 : w2;
+                                    let variacao = contagem[w1] >= contagem[w2] ? w2 : w1;
+                                    sugestoesGeneros.push({ base: base, var: variacao });
+                                    continue; 
+                                }
+                            }
+                            let count1 = contagem[w1];
+                            let count2 = contagem[w2];
+                            let provavelCorreta = count1 >= count2 ? w1 : w2;
+                            let provavelErro = count1 >= count2 ? w2 : w1;
+                            sugestoesTypos.push({ erro: provavelErro, correta: provavelCorreta, isAccent: saoIguaisSemAcento });
+                        }
+                    }
+                }
+
+                // --- RENDERIZAÇÃO CARDS ---
+                const criarCardAgrupamento = (parent, labelHTML, principal, variacao, titleGroup, titleDismiss) => {
+                    let card = document.createElement('div');
+                    card.className = `insight-card ${parent.id.replace('Grid','-card')}`; 
+                    card.innerHTML = `<div class="suggestion-text">${labelHTML}</div>`;
+                    let actions = document.createElement('div'); actions.className = 'card-actions';
+                    let btnGroup = document.createElement('button'); btnGroup.className = 'btn-group-action'; btnGroup.innerHTML = '🔗 Agrupar';
+                    btnGroup.title = titleGroup || "Considerar estas palavras como a mesma coisa.";
+                    btnGroup.onclick = function() { agruparSinonimo(principal, variacao); };
+                    let btnDismiss = document.createElement('button'); btnDismiss.className = 'btn-dismiss-action'; btnDismiss.innerHTML = '✖️ Não';
+                    btnDismiss.title = titleDismiss || "Não agrupar e ocultar esta sugestão.";
+                    btnDismiss.onclick = function() { dispensarSugestao(principal, variacao); };
+                    actions.appendChild(btnGroup); actions.appendChild(btnDismiss); card.appendChild(actions); parent.appendChild(card);
+                };
+
+                const criarCardStop = (parent, word) => {
+                    let card = document.createElement('div');
+                    card.className = `insight-card stopword-card`;
+                    card.innerHTML = `<div class="suggestion-text">Ignorar "<strong>${word}</strong>"?</div>`;
+                    let actions = document.createElement('div'); actions.className = 'card-actions';
+                    let btnIgnore = document.createElement('button'); btnIgnore.className = 'btn-ignore-action'; btnIgnore.innerHTML = '➕ Ignorar';
+                    btnIgnore.title = "Adicionar à lista de palavras excluídas.";
+                    btnIgnore.onclick = function() { adicionarIgnorado(word); };
+                    let btnDismiss = document.createElement('button'); btnDismiss.className = 'btn-dismiss-action'; btnDismiss.innerHTML = '✖️ Não';
+                    btnDismiss.title = "Não ignorar e ocultar esta sugestão.";
+                    btnDismiss.onclick = function() { dispensarSugestao(word, "STOPWORD"); }; 
+                    actions.appendChild(btnIgnore); actions.appendChild(btnDismiss); card.appendChild(actions); parent.appendChild(card);
+                };
+
+                let totalSugestoes = 0;
+
+                if (sugestoesStopWords.length > 0) { stopwordArea.style.display = 'block'; sugestoesStopWords.forEach(word => criarCardStop(stopwordGrid, word)); totalSugestoes += sugestoesStopWords.length; }
+                if (sugestoesPlurais.length > 0) { pluralArea.style.display = 'block'; sugestoesPlurais.forEach(item => { let label = `${item.base} <span class="arrow-sep">↔</span> <span class="suggestion-match">${item.var}</span>`; criarCardAgrupamento(pluralGrid, label, item.base, item.var); }); totalSugestoes += sugestoesPlurais.length; }
+                if (sugestoesGeneros.length > 0) { genderArea.style.display = 'block'; sugestoesGeneros.forEach(item => { let label = `${item.base} <span class="arrow-sep">↔</span> <span class="suggestion-match">${item.var}</span>`; criarCardAgrupamento(genderGrid, label, item.base, item.var); }); totalSugestoes += sugestoesGeneros.length; }
+                if (sugestoesTypos.length > 0) { typoArea.style.display = 'block'; sugestoesTypos.forEach(sugestao => { let cssClass = sugestao.isAccent ? 'suggestion-accent' : 'suggestion-fix'; let symbol = sugestao.isAccent ? '📝' : '➝'; let label = `${sugestao.erro} <span class="arrow-sep">${symbol}</span> <span class="${cssClass}">${sugestao.correta}?</span>`; criarCardAgrupamento(typoGrid, label, sugestao.correta, sugestao.erro); }); totalSugestoes += sugestoesTypos.length; }
+
+                badgeCount.innerText = totalSugestoes;
+                
+                // NAVEGAÇÃO ENTRE ABAS
+                if (!manterAba) {
+                    if (totalSugestoes > 0) {
+                        badgeCount.classList.remove('empty');
+                        noSuggestionsMsg.style.display = 'none';
+                        abrirAba('suggestionsTab', document.getElementById('btnTabSugestoes'));
+                    } else {
+                        badgeCount.classList.add('empty');
+                        noSuggestionsMsg.style.display = 'block';
+                        abrirAba('tableTab', document.getElementById('btnTabTabela'));
+                    }
+                } else {
+                    if (totalSugestoes > 0) {
+                        badgeCount.classList.remove('empty');
+                        noSuggestionsMsg.style.display = 'none';
+                    } else {
+                        badgeCount.classList.add('empty');
+                        noSuggestionsMsg.style.display = 'block';
+                    }
+                }
+
+                let arrayOrdenado = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+                document.getElementById('totalCount').innerText = arrayOrdenado.length;
+
+                arrayOrdenado.forEach(([termo, qtd]) => {
+                    const palavrasDoGrupo = Array.from(rastreioVariacoes[termo]);
+                    const listaVariacoesString = palavrasDoGrupo.filter(x => x !== termo).join(', ');
+                    const escapedGroup = palavrasDoGrupo.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                    const patternRegex = `(^|[^${caracteresValidos}])(${escapedGroup.join('|')})($|[^${caracteresValidos}])`;
+                    const regexReplace = new RegExp(patternRegex, 'gi');
+                    const regexBusca = new RegExp(patternRegex, 'i');
+                    let contextosEncontrados = [];
+                    let maxContextos = 10; 
+
+                    for (let bloco of blocosDeContexto) {
+                        if (contextosEncontrados.length >= maxContextos) break;
+                        if (bloco.search(regexBusca) !== -1) {
+                            let blocoFormatado = bloco.replace(regexReplace, '$1<span class="highlight">$2</span>$3');
+                            contextosEncontrados.push(blocoFormatado.trim());
+                        }
+                    }
+
+                    dadosParaExportacao.push({ termo, variacoes: listaVariacoesString, qtd, exemplos: contextsToText(contextosEncontrados) });
+
+                    let tr = document.createElement('tr');
+                    let tdInfo = document.createElement('td');
+                    let htmlContexto = contextosEncontrados.length > 0 
+                        ? `<div class="context-box"><strong>Contexto:</strong><br>${contextosEncontrados.map((c,i)=>`<div class="context-item"><strong>${i+1}.</strong> "${c}"</div>`).join('')}</div>`
+                        : `<div class="context-box" style="color:#999;">Contexto não identificado.</div>`;
+
+                    tdInfo.innerHTML = `
+                        <div class="word-header">
+                            <div><strong style="font-size:16px;">${termo}</strong> ${listaVariacoesString ? `<span class="badge-synonym">(inclui: ${listaVariacoesString})</span>` : ''}</div>
+                            <button class="btn-quick-ignore" onclick="adicionarIgnorado('${termo}')" title="Para de contar esta palavra e remove-a da lista.">🚫 Ignorar</button>
+                        </div>
+                        ${htmlContexto}
+                    `;
+                    let tdQtd = document.createElement('td');
+                    tdQtd.innerHTML = `<span class="badge-count">${qtd}</span>`;
+                    tr.appendChild(tdInfo); tr.appendChild(tdQtd); tabela.appendChild(tr);
+                });
+
+            } catch (erro) { console.error(erro); alert("Erro: " + erro.message); }
+        }
+
+        function contextsToText(ctxArray) {
+            if (!ctxArray) return "";
+            return ctxArray.map(c => c.replace(/<[^>]*>/g, "").replace(/\n/g, " ")).join(" | ");
+        }
+
+        function baixarPlanilha() {
+            if (!dadosParaExportacao.length) return;
+            let csvContent = "Palavra;Variações;Ocorrências;Exemplos de Contexto\n";
+            dadosParaExportacao.forEach(item => {
+                let ex = item.exemplos.replace(/;/g, ","); 
+                csvContent += `${item.termo};${item.variacoes};${item.qtd};${ex}\n`;
+            });
+            const bom = "\uFEFF"; 
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "analise_contexto_final.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
